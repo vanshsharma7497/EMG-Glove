@@ -1,0 +1,10 @@
+{
+  "settings": {
+    "click_cooldown": 1.0,
+    "scroll_amount": 10,
+    "cursor_speed": 3.0,
+    "os_poll_interval": 1.5,
+    "vision_poll": 2,
+    "keyboard_mode": true
+  }
+}

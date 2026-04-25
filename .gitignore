@@ -1,0 +1,6 @@
+.env
+__pycache__
+.claude
+documentations
+@automationLog.txt
+emg_dataset.npz
