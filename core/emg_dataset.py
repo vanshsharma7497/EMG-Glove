@@ -36,7 +36,7 @@ def generate_dataset(samples_per_gesture=200, noise_level=0.02):
     Generates a full labeled dataset by simulating many windows per gesture.
 
     samples_per_gesture: how many windows to generate per gesture.
-                         200 gives us 2400 total samples (200 x 12 gestures).
+                         200 gives us 3200 total samples (200 x 16 gestures).
                          More = better model, slower training.
 
     Returns:

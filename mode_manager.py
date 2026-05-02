@@ -63,9 +63,18 @@ import numpy as np
 #
 USE_HARDWARE = False   # ← change to True when hardware is connected
 
-# ── Hardware serial port ──────────────────────────────────────────────────────
-# Only used when USE_HARDWARE = True
-HARDWARE_PORT = "COM5"
+# ── PEN HARDWARE SWITCH ──────────────────────────────────────────────────────
+# Change this one line to switch between pen simulation and real pen hardware.
+#
+#   False = pen simulator mode (original behaviour, no pen hardware needed)
+#   True  = pen hardware mode  (reads from pen ESP32 on COM6)
+#
+USE_PEN_HARDWARE = True   # ← change to True when pen hardware is connected
+
+# ── Hardware serial ports ─────────────────────────────────────────────────────
+# Only used when the corresponding USE_*_HARDWARE = True
+HARDWARE_PORT     = "COM11"
+PEN_HARDWARE_PORT = "COM11"
 
 # ── Conditional imports ───────────────────────────────────────────────────────
 if USE_HARDWARE:
@@ -78,6 +87,9 @@ else:
     from core.emg_features    import extract_features
     from core.imu_simulator   import generate_imu_sample, imu_to_cursor_velocity
     from core.pen_simulator   import pen_docked, slider_position
+
+if USE_PEN_HARDWARE:
+    from core.pen_hardware_reader import PenHardwareReader
 
 from core.emg_dataset    import LABEL_NAMES
 
@@ -170,6 +182,13 @@ class ModeManager:
             self.hw_reader.start()
             print(f"  Hardware reader started on {HARDWARE_PORT}")
 
+        # ── Pen hardware reader (only when USE_PEN_HARDWARE = True) ───────────
+        self.pen_hw_reader = None
+        if USE_PEN_HARDWARE:
+            self.pen_hw_reader = PenHardwareReader(port=PEN_HARDWARE_PORT)
+            self.pen_hw_reader.start()
+            print(f"  Pen hardware reader started on {PEN_HARDWARE_PORT}")
+
         # ── Controllers ───────────────────────────────────────────────────────
         self.glove_controller = GLOVE_MODES[glove_mode]()
         self.pen_controller   = WritingController()
@@ -245,9 +264,11 @@ class ModeManager:
 
 
     def stop(self):
-        """Clean shutdown — stops hardware reader if running."""
+        """Clean shutdown — stops hardware readers if running."""
         if self.hw_reader is not None:
             self.hw_reader.stop()
+        if self.pen_hw_reader is not None:
+            self.pen_hw_reader.stop()
 
 
     # =========================================================================
@@ -263,7 +284,6 @@ class ModeManager:
         self._log_context_switch("glove")
 
         features_scaled = self.scaler.transform([features])
-        pred_result     = self.clf.predict(features_scaled)[0]
         pred_gesture    = LABEL_NAMES[int(self.clf.predict(features_scaled)[0])]
 
         if self.device_mode == "communication":
@@ -281,10 +301,23 @@ class ModeManager:
     # Pen context — pen undocked
     # =========================================================================
 
-    def process_pen_frame(self, pressure, gyro_x, gyro_y,
-                          slider=2, gyro_z=0.0):
-        """Called every frame when pen is undocked."""
+    def process_pen_frame(self, pressure=None, gyro_x=None, gyro_y=None,
+                           slider=2, gyro_z=0.0):
+        """
+        Called every frame when pen is undocked.
+        When USE_PEN_HARDWARE is True and arguments are None, reads live
+        values from self.pen_hw_reader instead of using passed-in values.
+        """
         self._log_context_switch("pen")
+
+        # ── Read live pen hardware if available ───────────────────────────
+        if USE_PEN_HARDWARE and self.pen_hw_reader is not None:
+            imu     = self.pen_hw_reader.get_imu_sample()
+            pressure = self.pen_hw_reader.get_pressure()
+            gyro_x   = imu["gyro_x"]
+            gyro_y   = imu["gyro_y"]
+            gyro_z   = imu["gyro_z"]
+            slider   = self.pen_hw_reader.get_slider_position()
 
         if self.device_mode == "communication":
             return self.comm_controller.process_pen_frame(
@@ -308,9 +341,15 @@ class ModeManager:
         Unified entry point — checks pen_docked each frame and routes
         automatically to the correct controller.
         """
-        import core.pen_simulator as ps
+        # Read pen_docked from the correct source
+        if USE_PEN_HARDWARE and self.pen_hw_reader is not None:
+            import core.pen_hardware_reader as phr
+            docked = phr.pen_docked
+        else:
+            import core.pen_simulator as ps
+            docked = ps.pen_docked
 
-        if ps.pen_docked:
+        if docked:
             gesture = self.process_emg_frame(features, emg_dx, emg_dy)
             return {
                 "device_mode" : self.device_mode,
@@ -360,8 +399,12 @@ class ModeManager:
 
     @property
     def active_context(self):
-        import core.pen_simulator as ps
-        return "glove" if ps.pen_docked else "pen"
+        if USE_PEN_HARDWARE and self.pen_hw_reader is not None:
+            import core.pen_hardware_reader as phr
+            return "glove" if phr.pen_docked else "pen"
+        else:
+            import core.pen_simulator as ps
+            return "glove" if ps.pen_docked else "pen"
 
     @property
     def writing_text(self):

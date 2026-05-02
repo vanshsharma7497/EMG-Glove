@@ -230,7 +230,7 @@ class WritingController:
         # ── Cursor movement (only when not in scroll mode) ─────────────────
         # Suppress cursor movement while SCROLL_READY so the planted pen
         # doesn't jitter the cursor during intentional tilting.
-        if self._scroll_state != "SCROLL_READY":
+        if self._scroll_state != "SCROLL_READY" and pen_is_down:
             dx, dy = imu_to_cursor_velocity(gyro_x, gyro_y)
             self._move_cursor(dx, dy)
         else:
@@ -367,13 +367,6 @@ class WritingController:
         self.last_action   = action
         self.last_tap_time = now
 
-
-    # ── Slider 2: writing mode ────────────────────────────────────────────
-
-    # Minimum duration in seconds for a stroke to be treated as a letter.
-    # Taps last ~80ms; real letter strokes last 300ms+.
-    # Any stroke shorter than this is classified as a tap gesture instead.
-    MIN_LETTER_DURATION = 0.15
 
     def _process_writing_mode(self, pressure, gyro_x, gyro_y):
         self.pressure_window.append(pressure)

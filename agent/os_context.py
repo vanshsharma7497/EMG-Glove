@@ -121,8 +121,8 @@ PROCESS_APP_MAP = {
 # Checked when process is a browser. More specific strings listed first
 # because matching stops at the first hit.
 URL_APP_MAP = [
-    ("youtube.com",          "youtube"),
     ("music.youtube.com",    "youtube_music"),   # must be before youtube.com
+    ("youtube.com",          "youtube"),
     ("docs.google.com",      "google_docs"),
     ("sheets.google.com",    "google_sheets"),
     ("slides.google.com",    "google_slides"),

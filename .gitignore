@@ -4,3 +4,8 @@ __pycache__
 documentations
 @automationLog.txt
 emg_dataset.npz
+.venv/
+.vscode/
+glove_status.json
+glove_commands.json
+glove_config.json

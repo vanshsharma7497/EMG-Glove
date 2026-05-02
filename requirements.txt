@@ -1,0 +1,35 @@
+# ── EMG Smart Glove — Python dependencies ────────────────────────────────────
+# Install all with:  pip install -r requirements.txt
+#
+# Grouped by subsystem for readability.
+
+# ── Core ML / Signal Processing ──────────────────────────────────────────────
+numpy
+scipy
+scikit-learn
+joblib
+matplotlib
+
+# ── Input / Automation ───────────────────────────────────────────────────────
+pyautogui
+keyboard
+
+# ── GUI ───────────────────────────────────────────────────────────────────────
+customtkinter
+
+# ── Hardware Serial ──────────────────────────────────────────────────────────
+pyserial
+
+# ── Text-to-Speech (Communication Mode) ──────────────────────────────────────
+pyttsx3
+
+# ── OS Context Detection ──────────────────────────────────────────────────────
+psutil
+pywin32
+uiautomation
+
+# ── Nvidia NIM Vision API (Context Agent Tier 3) ──────────────────────────────
+openai
+
+# ── Environment Variables ─────────────────────────────────────────────────────
+python-dotenv

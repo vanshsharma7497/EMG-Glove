@@ -291,7 +291,7 @@ class CommunicationController:
         classifier returns one of these gesture labels.
         """
         if gesture_name == GLOVE_GESTURE_PANIC:
-            self._trigger_panic("Glove gesture: index_ring_tap")
+            self._trigger_panic(f"Glove gesture: {gesture_name}")
             return
 
         if gesture_name in GLOVE_GESTURE_VOLUME:
@@ -429,59 +429,6 @@ class CommunicationController:
             self._tap_times.clear()
             self.clear_all()
         # single tap → do nothing (intentional)
-
-    def _register_tap(self):
-        """Record a tap event and react based on how many taps have occurred."""
-        now = time.time()
-
-        # Enforce cooldown — ignore taps that arrive too quickly
-        if (now - self._last_tap_time) < TAP_COOLDOWN:
-            return
-        self._last_tap_time = now
-
-        # Record this tap
-        self._tap_times.append(now)
-
-        # Remove taps outside the panic detection window
-        cutoff = now - PANIC_TIME_WINDOW
-        while self._tap_times and self._tap_times[0] < cutoff:
-            self._tap_times.popleft()
-
-        tap_count = len(self._tap_times)
-        self._log(f"Tap #{tap_count} detected")
-
-        # React based on count
-        if tap_count >= PANIC_TAP_COUNT:
-            self._tap_times.clear()
-            self._trigger_panic("5-tap gesture")
-        elif tap_count == 3:
-            # We can't wait to see if a 4th tap comes — act on triple now.
-            # If 4 or 5 arrive, they'll still accumulate for panic detection.
-            self.clear_all()
-            self._tap_times.clear()
-        elif tap_count == 2:
-            # Schedule double-tap action after a short window to allow
-            # a potential 3rd tap to arrive. 400ms is enough for intent.
-            threading.Timer(0.4, self._resolve_double_tap, args=(now,)).start()
-
-        # Single tap (tap_count == 1) → do nothing
-
-    def _resolve_double_tap(self, tap_time):
-        """
-        Called 400ms after the second tap. If no more taps have arrived
-        since then, execute the double-tap action (delete last word).
-        If more taps arrived, do nothing — they will be handled by their
-        own count checks.
-        """
-        # If the tap window now has 3+ taps, a triple (or more) came in —
-        # triple-tap already handled it. Don't double-act.
-        if len(self._tap_times) >= 3:
-            return
-        # Also guard: if the taps have already been cleared (e.g. panic
-        # fired), do nothing.
-        if not self._tap_times:
-            return
-        self.delete_last_word()
 
     def _update_volume_from_tilt(self, gyro_z):
         """
