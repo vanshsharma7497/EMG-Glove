@@ -150,6 +150,7 @@ Meta's neural band costs thousands and isn't publicly available. This glove is b
 ## Built By
 
 **Vansh Sharma** 
+
 Built entirely independently as a personal project.  
 Currently on version 7.0, iterated over approximately 6 months.
 
